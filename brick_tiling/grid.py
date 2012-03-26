@@ -51,11 +51,14 @@ class grid(object):
         if self.out_of_bounds(x, y): return
         i = self.index(x, y)
         self.arr[i] = val
+        #print "Setting arr[%d] = %s for set(%d, %d, %s)" % (i, val, x, y, val)
 
     def show(self):
+        lines = []
         for i in xrange(self.n):
-            base = i*self.n
-            print self.arr[base:base+self.m]
+            base = i*self.m
+            lines.append( ''.join(self.arr[base:base+self.m]) )
+        return "\n".join(lines)
 
     def copy(self):
         return grid(self.n, self.m, copy(self.arr))
@@ -68,6 +71,7 @@ class grid(object):
         undo = []
         for (x, y, val) in changes:
             undo.append((x, y, self.get(x, y)))
+            #print "Calling set from apply with (%d, %d, %s)" % (x, y, val)
             self.set(x, y, val)
         return undo
 
@@ -85,13 +89,12 @@ def irange(x,y,z=1):
     return range(x,y+1,z)
 
 
-def placement(agrid, i, j, direction, flipped):
+def placement(thegrid, i, j, direction, flipped):
     changes = []
-    thegrid = agrid.copy()
     blocked = False
     endi, endj = i, j
     ki, kj = knob_index(thegrid, i, j, direction, flipped)
-    if thegrid.get(ki, kj) in [BLOCKED, PLACEMENT]:
+    if thegrid.get(ki, kj) in (BLOCKED, PLACEMENT):
         return False, None
     changes.append((ki, kj, PLACEMENT))
     if direction == UP:
@@ -104,7 +107,7 @@ def placement(agrid, i, j, direction, flipped):
         endj = j - 2
     for ix in irange(*sort(i, endi)):
         for jx in irange(*sort(j, endj)):
-            if thegrid.get(ix, jx) in [BLOCKED, PLACEMENT]:
+            if thegrid.get(ix, jx) in (BLOCKED, PLACEMENT):
                 return False, None
             changes.append((ix, jx, PLACEMENT))
     return True, changes
@@ -112,17 +115,21 @@ def placement(agrid, i, j, direction, flipped):
 def count_placements(thegrid):
     count = 0
     all_blocked = True
+    undo_list = []
     for i in xrange(thegrid.n):
         for j in xrange(thegrid.m):
-            if thegrid.get(i, j) in [OPEN, CHECKED]:
+            if thegrid.get(i, j) in (OPEN, CHECKED):
                 all_blocked = False
                 if thegrid.get(i, j) == OPEN:
-                    count += placements(thegrid, i, j)
+                    pcount, undo = placements(thegrid, i, j)
+                    count += pcount
+                    undo_list.extend(undo)
+    thegrid.apply_changes(undo_list)
     return 1 if all_blocked else count
 
 def placement_gen(thegrid, i, j):
-    directions = [UP, DOWN, LEFT, RIGHT]
-    flipped = [NORMAL, FLIPPED]
+    directions = (UP, DOWN, LEFT, RIGHT)
+    flipped = (NORMAL, FLIPPED)
     count = 0
     for d in directions:
         for f in flipped:
@@ -133,11 +140,18 @@ def placements(thegrid, i, j):
     for p in placement_gen(thegrid, i, j):
         result, changes = placement(*p)
         if result:
+            #print "Making placement from (%d, %d)" % (i, j)
+            #print thegrid.show()
+            #print "Changes: %s" % changes
             undo = thegrid.apply_changes_with_undo(changes)
+            #print "After making placement from (%d, %d)" % (i, j)
+            #print thegrid.show()
             count += count_placements(thegrid)
             thegrid.apply_changes(undo)
-    thegrid.set(i, j, CHECKED)
-    return count
+            #print "After undo placement from (%d, %d)" % (i, j)
+            #print thegrid.show()
+    undo = thegrid.apply_changes_with_undo([(i, j, CHECKED)])
+    return count, undo
 
 
 def check_all(thegrid, i, j):

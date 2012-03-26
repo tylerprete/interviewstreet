@@ -60,6 +60,17 @@ class grid(object):
     def copy(self):
         return grid(self.n, self.m, copy(self.arr))
 
+    def apply_changes(self, changes):
+        for (x, y, val) in changes:
+            self.set(x, y, val)
+
+    def apply_changes_with_undo(self, changes):
+        undo = []
+        for (x, y, val) in changes:
+            undo.append((x, y, self.get(x, y)))
+            self.set(x, y, val)
+        return undo
+
 def knob_index(thegrid, i, j, direction, flipped):
     if direction == UP or direction == DOWN:
         ix, jx = (i, j-1) if flipped else (i, j+1)
@@ -73,14 +84,16 @@ def sort(a, b):
 def irange(x,y,z=1):
     return range(x,y+1,z)
 
+
 def placement(agrid, i, j, direction, flipped):
+    changes = []
     thegrid = agrid.copy()
     blocked = False
     endi, endj = i, j
     ki, kj = knob_index(thegrid, i, j, direction, flipped)
     if thegrid.get(ki, kj) in [BLOCKED, PLACEMENT]:
         return False, None
-    thegrid.set(ki, kj, PLACEMENT)
+    changes.append((ki, kj, PLACEMENT))
     if direction == UP:
         endi = i - 2
     elif direction == RIGHT:
@@ -93,8 +106,8 @@ def placement(agrid, i, j, direction, flipped):
         for jx in irange(*sort(j, endj)):
             if thegrid.get(ix, jx) in [BLOCKED, PLACEMENT]:
                 return False, None
-            thegrid.set(ix, jx, PLACEMENT)
-    return True, thegrid
+            changes.append((ix, jx, PLACEMENT))
+    return True, changes
 
 def count_placements(thegrid):
     count = 0
@@ -118,9 +131,11 @@ def placement_gen(thegrid, i, j):
 def placements(thegrid, i, j):
     count = 0
     for p in placement_gen(thegrid, i, j):
-        result, newgrid = placement(*p)
+        result, changes = placement(*p)
         if result:
-            count += count_placements(newgrid)
+            undo = thegrid.apply_changes_with_undo(changes)
+            count += count_placements(thegrid)
+            thegrid.apply_changes(undo)
     thegrid.set(i, j, CHECKED)
     return count
 

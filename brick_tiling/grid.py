@@ -1,10 +1,10 @@
 import fileinput
 from copy import deepcopy, copy
 
-BLOCKED = '#'
-OPEN = '.'
-CHECKED = '*'
-PLACEMENT = '@'
+BLOCKED = ord('#')
+OPEN = ord('.')
+CHECKED = ord('*')
+PLACEMENT = ord('@')
 UP = 1
 DOWN = 2
 LEFT = 3
@@ -19,13 +19,15 @@ UP and not FLIPPED:
     **
 """
 
+MEMO = {}
+
 class grid(object):
 
     @classmethod
     def __from_list__(cls, lst):
         n = len(lst)
         m = len(lst[0])
-        arr = []
+        arr = bytearray()
         for i in xrange(n):
             arr.extend(lst[i])
         return grid(n, m, arr)
@@ -34,7 +36,7 @@ class grid(object):
         self.n = n
         self.m = m
         arr_size = n * m
-        self.arr = arr if arr else list(BLOCKED * arr_size)
+        self.arr = arr if arr else bytearray(BLOCKED * arr_size, 'ascii')
 
     def index(self, x, y):
         return (x * self.m) + y
@@ -57,7 +59,7 @@ class grid(object):
         lines = []
         for i in xrange(self.n):
             base = i*self.m
-            lines.append( ''.join(self.arr[base:base+self.m]) )
+            lines.append( ''.join(str(self.arr[base:base+self.m])) )
         return "\n".join(lines)
 
     def copy(self):
@@ -112,7 +114,20 @@ def placement(thegrid, i, j, direction, flipped):
             changes.append((ix, jx, PLACEMENT))
     return True, changes
 
+def clean_square(sqr):
+    if sqr == PLACEMENT:
+        return BLOCKED
+    elif sqr == CHECKED:
+        return OPEN
+    else:
+        return sqr
+
 def count_placements(thegrid):
+    s = str(thegrid.arr)
+    count = MEMO.get(s)
+    if count:
+        #print "Actually used memo!"
+        return count
     count = 0
     all_blocked = True
     undo_list = []
@@ -125,7 +140,10 @@ def count_placements(thegrid):
                     count += pcount
                     undo_list.extend(undo)
     thegrid.apply_changes(undo_list)
-    return 1 if all_blocked else count
+    if all_blocked:
+        count = 1
+    MEMO[s] = count
+    return count
 
 def placement_gen(thegrid, i, j):
     directions = (UP, DOWN, LEFT, RIGHT)

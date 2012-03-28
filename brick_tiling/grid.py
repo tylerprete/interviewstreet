@@ -2,7 +2,6 @@ import fileinput
 
 BLOCKED = '#'
 OPEN = '.'
-CHECKED = '*'
 PLACEMENT = '@'
 UP = 1
 DOWN = 2
@@ -60,9 +59,6 @@ class grid(object):
             lines.append( ''.join(self.arr[base:base+self.m]) )
         return "\n".join(lines)
 
-    def copy(self):
-        return grid(self.n, self.m, copy(self.arr))
-
     def apply_changes(self, changes):
         for (x, y, val) in changes:
             self.set(x, y, val)
@@ -78,151 +74,94 @@ class grid(object):
 def display(x):
     return str(x) if x < 32 else chr(x)
 
-def knob_index(thegrid, i, j, direction, flipped):
-    if direction == UP or direction == DOWN:
-        ix, jx = (i, j-1) if flipped else (i, j+1)
-    else:
-        ix, jx = (i-1, j) if flipped else (i+1, j)
-    return ix, jx
-
-def sort(a, b):
-    return (a, b) if a <= b else (b, a)
-
-def irange(x,y,z=1):
-    return range(x,y+1,z)
-
 def counter_clockwise_rotate(coords):
-    return map(lambda (x, y): (-y, x), pieces)
+    return map(lambda (x, y): (-y, x), coords)
+
+def clockwise_rotate(coords):
+    return map(lambda (x, y): (y, -x), coords)
 
 def legal_placement(thegrid, coords):
     for (x, y) in coords:
-        if thegrid.get(x, y) not in (OPEN, CHECKED):
+        if thegrid.get(x, y) != OPEN:
             return False
     return True
 
 def adjust_coords(i, j, coords):
     return [(x+i, y+j) for (x,y) in coords]
 
-def placement_from_head(thegrid, i, j, direction, flipped):
-    changes = []
-
-    coords = [(0,0), (1,0), (2,0), (2,1)]
-    flipped_coords = [(0,0), (1,0), (2,0), (2,-1)]
+def legal_placements(thegrid, x, y, coords, flipped_coords):
     legal_placement_list = []
-    for i in xrange(3):
-        new_coords = counter_clockwise_rotate(coords)
-        new_flipped_coords = counter_clockwise_rotate(flipped_coords)
-        adj_new_coords = adjust_coords(i, j, new_coords)
-        adj_new_flipped_coords = adjust_coords(i, j, new_flipped_coords)
-        if legal_placement(thegrid, adj_new_coords):
-            legal_placement_list.append(new_coords)
-        if legal_placement(thegrid, adj_new_flipped_coords):
-            legal_placement_list.append(adj_new_flipped_coords)
+    for i in xrange(4):
+        adj_coords = adjust_coords(x, y, coords)
+        adj_flipped_coords = adjust_coords(x, y, flipped_coords)
+        if legal_placement(thegrid, adj_coords):
+            legal_placement_list.append(adj_coords)
+        if legal_placement(thegrid, adj_flipped_coords):
+            legal_placement_list.append(adj_flipped_coords)
+        coords = clockwise_rotate(coords)
+        flipped_coords = counter_clockwise_rotate(flipped_coords)
     return legal_placement_list
 
-def placement_from_mid(thegrid, i, j, direction, flipped):
-    pass
+def placements_from_head(thegrid, x, y):
+    coords = [(0,0), (1,0), (2,0), (2,1)]
+    flipped_coords = [(0,0), (1,0), (2,0), (2,-1)]
+    return legal_placements(thegrid, x, y, coords, flipped_coords)
 
-def placement_from_corner(thegrid, i, j, direction, flipped):
-    changes = []
-    endi, endj = i, j
-    ki, kj = knob_index(thegrid, i, j, direction, flipped)
-    if thegrid.get(ki, kj) not in (OPEN, CHECKED):
-        return False, None
-    changes.append((ki, kj, str(piece)))
-    if direction == UP:
-        endi = i - 2
-    elif direction == DOWN:
-        endi = i + 2
-    elif direction == RIGHT:
-        endj = j + 2
-    elif direction == LEFT:
-        endj = j - 2
-    for ix in irange(*sort(i, endi)):
-        for jx in irange(*sort(j, endj)):
-            if thegrid.get(ix, jx) not in (OPEN, CHECKED):
-                return False, None
-            changes.append((ix, jx, str(piece)))
-    return True, changes
+def placements_from_mid(thegrid, x, y):
+    coords = [(-1,0), (0,0), (1,0), (1,1)]
+    flipped_coords = [(-1,0), (0,0), (1,0), (1,-1)]
+    return legal_placements(thegrid, x, y, coords, flipped_coords)
 
-def placement_from_knob(thegrid, i, j, direction, flipped):
-    pass
+def placements_from_corner(thegrid,x, y):
+    coords = [(-2,0), (-1,0), (0,0), (0,1)]
+    flipped_coords = [(-2,0), (-1,0), (0,0), (0,-1)]
+    return legal_placements(thegrid, x, y, coords, flipped_coords)
 
-def placement(thegrid, i, j, direction, flipped):
-    changes = []
-    endi, endj = i, j
-    ki, kj = knob_index(thegrid, i, j, direction, flipped)
-    if thegrid.get(ki, kj) not in (OPEN, CHECKED):
-        return False, None
-    changes.append((ki, kj, str(piece)))
-    if direction == UP:
-        endi = i - 2
-    elif direction == DOWN:
-        endi = i + 2
-    elif direction == RIGHT:
-        endj = j + 2
-    elif direction == LEFT:
-        endj = j - 2
-    for ix in irange(*sort(i, endi)):
-        for jx in irange(*sort(j, endj)):
-            if thegrid.get(ix, jx) not in (OPEN, CHECKED):
-                return False, None
-            changes.append((ix, jx, str(piece)))
-    return True, changes
+def placements_from_knob(thegrid, x, y):
+    coords = [(-2,-1), (-1,-1), (0,-1), (0,0)]
+    flipped_coords = [(-2,1), (-1,1), (0,1), (0,0)]
+    return legal_placements(thegrid, x, y, coords, flipped_coords)
 
 def count_placements(thegrid):
-    count = 0
-    all_blocked = True
-    undo_list = []
     for i in xrange(thegrid.n):
         for j in xrange(thegrid.m):
-            if thegrid.get(i, j) in (OPEN, CHECKED):
-                all_blocked = False
-                if thegrid.get(i, j) == OPEN:
-                    pcount, undo = placements(thegrid, i, j)
-                    count += pcount
-                    undo_list.extend(undo)
-    thegrid.apply_changes(undo_list)
-    if all_blocked:
-        print thegrid.show()
-        print
-    return 1 if all_blocked else count
+            if thegrid.get(i, j) == OPEN:
+                count = placements(thegrid, i, j)
+                return count
+    #print thegrid.show()
+    #print
+    return 1
 
 def placement_gen(thegrid, i, j):
-    directions = (UP, DOWN, LEFT, RIGHT)
-    flipped = (NORMAL, FLIPPED)
-    count = 0
-    for d in directions:
-        for f in flipped:
-            yield (thegrid, i, j, d, f)
+    all_placements = []
+    all_placements.extend(placements_from_head(thegrid, i, j))
+    all_placements.extend(placements_from_mid(thegrid, i, j))
+    all_placements.extend(placements_from_corner(thegrid, i, j))
+    all_placements.extend(placements_from_knob(thegrid, i, j))
+    return all_placements
+
+def make_changes(coords):
+    return [(x, y, str(piece % 10)) for (x, y) in coords]
 
 def placements(thegrid, i, j):
     count = 0
-    for p in placement_gen(thegrid, i, j):
-        result, changes = placement(*p)
-        if result:
-            #print "Making placement from (%d, %d)" % (i, j)
-            #print thegrid.show()
-            #print "Changes: %s" % changes
-            undo = thegrid.apply_changes_with_undo(changes)
-            #print "After making placement from (%d, %d)" % (i, j)
-            #print thegrid.show()
-            global piece
-            piece += 1
-            count += count_placements(thegrid)
-            piece -= 1
-            thegrid.apply_changes(undo)
-            #print "After undo placement from (%d, %d)" % (i, j)
-            #print thegrid.show()
-    undo = thegrid.apply_changes_with_undo([(i, j, CHECKED)])
-    return count, undo
-
-
-def check_all(thegrid, i, j):
-    for p in placement_gen(thegrid, i, j):
-        result, newgrid = placement(*p)
-        print "placement(g, %d, %d, %d, %d) = %s" % (i, j, p[3], p[4], result)
-
+    global piece
+    all_coords = placement_gen(thegrid, i, j)
+    for coords in all_coords:
+        changes = make_changes(coords)
+        #print "Making placement from (%d, %d)" % (i, j)
+        #print thegrid.show()
+        #print "Changes: %s" % changes
+        undo = thegrid.apply_changes_with_undo(changes)
+        #print "After making placement from (%d, %d)" % (i, j)
+        #print thegrid.show()
+        piece += 1
+        count += count_placements(thegrid)
+        piece -= 1
+        thegrid.apply_changes(undo)
+        #print "After undo placement from (%d, %d)" % (i, j)
+        #print thegrid.show()
+    return count
 
 def process_input():
     lines = []

@@ -91,10 +91,65 @@ def sort(a, b):
 def irange(x,y,z=1):
     return range(x,y+1,z)
 
+def counter_clockwise_rotate(coords):
+    return map(lambda (x, y): (-y, x), pieces)
+
+def legal_placement(thegrid, coords):
+    for (x, y) in coords:
+        if thegrid.get(x, y) not in (OPEN, CHECKED):
+            return False
+    return True
+
+def adjust_coords(i, j, coords):
+    return [(x+i, y+j) for (x,y) in coords]
+
+def placement_from_head(thegrid, i, j, direction, flipped):
+    changes = []
+
+    coords = [(0,0), (1,0), (2,0), (2,1)]
+    flipped_coords = [(0,0), (1,0), (2,0), (2,-1)]
+    legal_placement_list = []
+    for i in xrange(3):
+        new_coords = counter_clockwise_rotate(coords)
+        new_flipped_coords = counter_clockwise_rotate(flipped_coords)
+        adj_new_coords = adjust_coords(i, j, new_coords)
+        adj_new_flipped_coords = adjust_coords(i, j, new_flipped_coords)
+        if legal_placement(thegrid, adj_new_coords):
+            legal_placement_list.append(new_coords)
+        if legal_placement(thegrid, adj_new_flipped_coords):
+            legal_placement_list.append(adj_new_flipped_coords)
+    return legal_placement_list
+
+def placement_from_mid(thegrid, i, j, direction, flipped):
+    pass
+
+def placement_from_corner(thegrid, i, j, direction, flipped):
+    changes = []
+    endi, endj = i, j
+    ki, kj = knob_index(thegrid, i, j, direction, flipped)
+    if thegrid.get(ki, kj) not in (OPEN, CHECKED):
+        return False, None
+    changes.append((ki, kj, str(piece)))
+    if direction == UP:
+        endi = i - 2
+    elif direction == DOWN:
+        endi = i + 2
+    elif direction == RIGHT:
+        endj = j + 2
+    elif direction == LEFT:
+        endj = j - 2
+    for ix in irange(*sort(i, endi)):
+        for jx in irange(*sort(j, endj)):
+            if thegrid.get(ix, jx) not in (OPEN, CHECKED):
+                return False, None
+            changes.append((ix, jx, str(piece)))
+    return True, changes
+
+def placement_from_knob(thegrid, i, j, direction, flipped):
+    pass
 
 def placement(thegrid, i, j, direction, flipped):
     changes = []
-    blocked = False
     endi, endj = i, j
     ki, kj = knob_index(thegrid, i, j, direction, flipped)
     if thegrid.get(ki, kj) not in (OPEN, CHECKED):

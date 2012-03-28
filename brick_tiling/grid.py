@@ -1,5 +1,4 @@
 import fileinput
-from copy import deepcopy, copy
 
 BLOCKED = '#'
 OPEN = '.'
@@ -18,6 +17,7 @@ UP and not FLIPPED:
     *
     **
 """
+piece = 0
 
 class grid(object):
 
@@ -75,6 +75,9 @@ class grid(object):
             self.set(x, y, val)
         return undo
 
+def display(x):
+    return str(x) if x < 32 else chr(x)
+
 def knob_index(thegrid, i, j, direction, flipped):
     if direction == UP or direction == DOWN:
         ix, jx = (i, j-1) if flipped else (i, j+1)
@@ -94,22 +97,22 @@ def placement(thegrid, i, j, direction, flipped):
     blocked = False
     endi, endj = i, j
     ki, kj = knob_index(thegrid, i, j, direction, flipped)
-    if thegrid.get(ki, kj) in (BLOCKED, PLACEMENT):
+    if thegrid.get(ki, kj) not in (OPEN, CHECKED):
         return False, None
-    changes.append((ki, kj, PLACEMENT))
+    changes.append((ki, kj, str(piece)))
     if direction == UP:
         endi = i - 2
-    elif direction == RIGHT:
-        endj = j + 2
     elif direction == DOWN:
         endi = i + 2
+    elif direction == RIGHT:
+        endj = j + 2
     elif direction == LEFT:
         endj = j - 2
     for ix in irange(*sort(i, endi)):
         for jx in irange(*sort(j, endj)):
-            if thegrid.get(ix, jx) in (BLOCKED, PLACEMENT):
+            if thegrid.get(ix, jx) not in (OPEN, CHECKED):
                 return False, None
-            changes.append((ix, jx, PLACEMENT))
+            changes.append((ix, jx, str(piece)))
     return True, changes
 
 def count_placements(thegrid):
@@ -125,6 +128,9 @@ def count_placements(thegrid):
                     count += pcount
                     undo_list.extend(undo)
     thegrid.apply_changes(undo_list)
+    if all_blocked:
+        print thegrid.show()
+        print
     return 1 if all_blocked else count
 
 def placement_gen(thegrid, i, j):
@@ -146,7 +152,10 @@ def placements(thegrid, i, j):
             undo = thegrid.apply_changes_with_undo(changes)
             #print "After making placement from (%d, %d)" % (i, j)
             #print thegrid.show()
+            global piece
+            piece += 1
             count += count_placements(thegrid)
+            piece -= 1
             thegrid.apply_changes(undo)
             #print "After undo placement from (%d, %d)" % (i, j)
             #print thegrid.show()

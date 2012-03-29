@@ -54,6 +54,12 @@ class grid(object):
     def reverse_index(self, i):
         return (i / self.m, i % self.m)
 
+    def open_square(self):
+        for (i, v) in enumerate(self.arr):
+            if v == OPEN:
+                return self.reverse_index(i)
+        return None
+
     def show(self):
         lines = []
         for i in xrange(self.n):
@@ -146,6 +152,13 @@ def placement_gen(thegrid, i, j):
     return all_placements
 
 def count_placements(thegrid):
+    sq = thegrid.open_square()
+    if sq:
+        count = placements(thegrid, sq[0], sq[1])
+        return count
+    return 1
+
+def count_placements2(thegrid):
     for i in xrange(thegrid.n):
         for j in xrange(thegrid.m):
             if thegrid.get(i, j) == OPEN:

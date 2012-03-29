@@ -67,17 +67,13 @@ class grid(object):
             lines.append( ''.join(self.arr[base:base+self.m]) )
         return "\n".join(lines)
 
-    def apply_changes(self, changes):
-        for (x, y, val) in changes:
-            self.set(x, y, val)
+    def free_placements(self, coords):
+        for (x, y) in coords:
+            self.arr[self.index(x, y)] = OPEN
 
-    def apply_changes_with_undo(self, changes):
-        undo = []
-        for (x, y, val) in changes:
-            undo.append((x, y, self.get(x, y)))
-            #print "Calling set from apply with (%d, %d, %s)" % (x, y, val)
-            self.set(x, y, val)
-        return undo
+    def apply_placements(self, coords, val):
+        for (x, y) in coords:
+            self.arr[self.index(x, y)] = val
 
 def display(x):
     return str(x) if x < 32 else chr(x)
@@ -168,25 +164,21 @@ def count_placements2(thegrid):
     #print
     return 1
 
-def make_changes(coords):
-    return [(x, y, str(piece % 10)) for (x, y) in coords]
-
 def placements(thegrid, i, j):
     count = 0
     global piece
     all_coords = placement_gen(thegrid, i, j)
     for coords in all_coords:
-        changes = make_changes(coords)
         #print "Making placement from (%d, %d)" % (i, j)
         #print thegrid.show()
         #print "Changes: %s" % changes
-        undo = thegrid.apply_changes_with_undo(changes)
+        thegrid.apply_placements(coords, str(piece % 10))
         #print "After making placement from (%d, %d)" % (i, j)
         #print thegrid.show()
         piece += 1
         count += count_placements(thegrid)
         piece -= 1
-        thegrid.apply_changes(undo)
+        thegrid.free_placements(coords)
         #print "After undo placement from (%d, %d)" % (i, j)
         #print thegrid.show()
     return count

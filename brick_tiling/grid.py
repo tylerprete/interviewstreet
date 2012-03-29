@@ -60,6 +60,11 @@ class grid(object):
                 return self.reverse_index(i)
         return None
 
+    def open_squares(self):
+        for (i, v) in enumerate(self.arr):
+            if v == OPEN:
+                yield self.reverse_index(i)
+
     def show(self):
         lines = []
         for i in xrange(self.n):
@@ -145,12 +150,16 @@ def legal_placements(thegrid, x, y, rotations):
         yield adj_coords
 
 def any_legal_placements(thegrid, x, y, rotations):
-    for coords in rotations:
-        adj_coords = adjust_coords(x, y, coords)
-        if legal_placement(thegrid, adj_coords):
-            return True
-    return False
+    for p in legal_placements(thegrid, x, y, rotations):
+        return True
+    else:
+        return False
 
+def check_board(thegrid, rotations):
+    for (x, y) in thegrid.open_squares():
+        if not any_legal_placements(thegrid, x, y, rotations):
+            return False
+    return True
 
 
 # Build all_rotations const

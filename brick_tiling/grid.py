@@ -65,6 +65,13 @@ class grid(object):
             if v == OPEN:
                 yield self.reverse_index(i)
 
+    def open_squares_count(self):
+        count = 0
+        for v in self.arr:
+            if v == OPEN:
+                count += 1
+        return count
+
     def show(self):
         lines = []
         for i in xrange(self.n):
@@ -149,6 +156,10 @@ def legal_placements(thegrid, x, y, rotations):
             continue
         yield adj_coords
 
+def nearby_squares(thegrid, coords):
+    pass
+
+
 def any_legal_placements(thegrid, x, y, rotations):
     for p in legal_placements(thegrid, x, y, rotations):
         return True
@@ -170,7 +181,10 @@ all_rotations.extend(rotations_from_corner())
 all_rotations.extend(rotations_from_knob())
 ALL_ROTATIONS = tuple(all_rotations)
 
+placement_calls = 0
 def placements(thegrid, i, j):
+    global placement_calls
+    placement_calls += 1
     count = 0
     global piece
     all_coords = legal_placements(thegrid, i, j, ALL_ROTATIONS)
@@ -191,18 +205,25 @@ def placements(thegrid, i, j):
     return count
 
 def process_input():
+    global placement_calls
     lines = []
     for line in fileinput.input():
         lines.append(line.rstrip())
     boards = int(lines[0])
     line = 1
     for board in xrange(boards):
+        placement_calls = 0
         n, m = map(int, lines[line].split())
         line += 1
         theboard = lines[line:line+n]
         thegrid = grid.__from_list__(theboard)
-        sq = thegrid.open_square()
-        print placements(thegrid, *sq) % 1000000007 if sq else 1
+        if thegrid.open_squares_count() % 4 == 0:
+            sq = thegrid.open_square()
+            print placements(thegrid, *sq) % 1000000007 if sq else 1
+            #print "Placement calls: %d" % placement_calls
+        else:
+            print "0"
+
         line = line+n
 
 if __name__ == '__main__':

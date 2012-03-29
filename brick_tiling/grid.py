@@ -130,12 +130,19 @@ def adjust_coords(i, j, coords):
     return [(x+i, y+j) for (x,y) in coords]
 
 def legal_placements(thegrid, x, y, rotations):
-    legal_placement_list = []
     for coords in rotations:
-        adj_coords = adjust_coords(x, y, coords)
-        if legal_placement(thegrid, adj_coords):
-            legal_placement_list.append(adj_coords)
-    return legal_placement_list
+        adj_coords = []
+        continue_outer_loop = False
+        for (i, j) in coords:
+            a = x+i; b = y+j
+            if thegrid.get(a, b) != OPEN:
+                continue_outer_loop = True
+                break
+            else:
+                adj_coords.append((a, b))
+        if continue_outer_loop:
+            continue
+        yield adj_coords
 
 def any_legal_placements(thegrid, x, y, rotations):
     for coords in rotations:

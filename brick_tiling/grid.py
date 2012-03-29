@@ -126,6 +126,7 @@ def legal_placement(thegrid, coords):
     return True
 
 def adjust_coords(i, j, coords):
+    #return map(lambda (x, y): (x+i, y+j), coords)
     return [(x+i, y+j) for (x,y) in coords]
 
 def legal_placements(thegrid, x, y, rotations):
@@ -136,6 +137,15 @@ def legal_placements(thegrid, x, y, rotations):
             legal_placement_list.append(adj_coords)
     return legal_placement_list
 
+def any_legal_placements(thegrid, x, y, rotations):
+    for coords in rotations:
+        adj_coords = adjust_coords(x, y, coords)
+        if legal_placement(thegrid, adj_coords):
+            return True
+    return False
+
+
+
 # Build all_rotations const
 all_rotations = []
 all_rotations.extend(rotations_from_head())
@@ -143,23 +153,6 @@ all_rotations.extend(rotations_from_mid())
 all_rotations.extend(rotations_from_corner())
 all_rotations.extend(rotations_from_knob())
 ALL_ROTATIONS = tuple(all_rotations)
-
-def count_placements(thegrid):
-    sq = thegrid.open_square()
-    if sq:
-        count = placements(thegrid, sq[0], sq[1])
-        return count
-    return 1
-
-def count_placements2(thegrid):
-    for i in xrange(thegrid.n):
-        for j in xrange(thegrid.m):
-            if thegrid.get(i, j) == OPEN:
-                count = placements(thegrid, i, j)
-                return count
-    #print thegrid.show()
-    #print
-    return 1
 
 def placements(thegrid, i, j):
     count = 0
@@ -173,7 +166,8 @@ def placements(thegrid, i, j):
         #print "After making placement from (%d, %d)" % (i, j)
         #print thegrid.show()
         piece += 1
-        count += count_placements(thegrid)
+        sq = thegrid.open_square()
+        count += placements(thegrid, *sq) if sq else 1
         piece -= 1
         thegrid.free_placements(coords)
         #print "After undo placement from (%d, %d)" % (i, j)
@@ -191,7 +185,8 @@ def process_input():
         line += 1
         theboard = lines[line:line+n]
         thegrid = grid.__from_list__(theboard)
-        print count_placements(thegrid) % 1000000007
+        sq = thegrid.open_square()
+        print placements(thegrid, *sq) % 1000000007 if sq else 1
         line = line+n
 
 if __name__ == '__main__':

@@ -50,7 +50,9 @@ class grid(object):
         if self.out_of_bounds(x, y): return
         i = self.index(x, y)
         self.arr[i] = val
-        #print "Setting arr[%d] = %s for set(%d, %d, %s)" % (i, val, x, y, val)
+
+    def reverse_index(self, i):
+        return (i / self.m, i % self.m)
 
     def show(self):
         lines = []
@@ -80,6 +82,41 @@ def counter_clockwise_rotate(coords):
 def clockwise_rotate(coords):
     return map(lambda (x, y): (y, -x), coords)
 
+def all_clockwise_rotations(coords):
+    rotations = []
+    for i in xrange(4):
+        rotations.append(coords)
+        coords = clockwise_rotate(coords)
+    return rotations
+
+def rotations_from_head(thegrid):
+    coords = [(0,0), (1,0), (2,0), (2,1)]
+    flipped_coords = [(0,0), (1,0), (2,0), (2,-1)]
+    rotations = all_clockwise_rotations(coords)
+    rotations.extend(all_clockwise_rotations(flipped_coords))
+    return rotations
+
+def rotations_from_mid(thegrid):
+    coords = [(-1,0), (0,0), (1,0), (1,1)]
+    flipped_coords = [(-1,0), (0,0), (1,0), (1,-1)]
+    rotations = all_clockwise_rotations(coords)
+    rotations.extend(all_clockwise_rotations(flipped_coords))
+    return rotations
+
+def rotations_from_corner(thegrid):
+    coords = [(-2,0), (-1,0), (0,0), (0,1)]
+    flipped_coords = [(-2,0), (-1,0), (0,0), (0,-1)]
+    rotations = all_clockwise_rotations(coords)
+    rotations.extend(all_clockwise_rotations(flipped_coords))
+    return rotations
+
+def rotations_from_knob(thegrid):
+    coords = [(-2,-1), (-1,-1), (0,-1), (0,0)]
+    flipped_coords = [(-2,1), (-1,1), (0,1), (0,0)]
+    rotations = all_clockwise_rotations(coords)
+    rotations.extend(all_clockwise_rotations(flipped_coords))
+    return rotations
+
 def legal_placement(thegrid, coords):
     for (x, y) in coords:
         if thegrid.get(x, y) != OPEN:
@@ -89,38 +126,24 @@ def legal_placement(thegrid, coords):
 def adjust_coords(i, j, coords):
     return [(x+i, y+j) for (x,y) in coords]
 
-def legal_placements(thegrid, x, y, coords, flipped_coords):
+def legal_placements(thegrid, x, y, rotations):
     legal_placement_list = []
-    for i in xrange(4):
+    for coords in rotations:
         adj_coords = adjust_coords(x, y, coords)
-        adj_flipped_coords = adjust_coords(x, y, flipped_coords)
         if legal_placement(thegrid, adj_coords):
             legal_placement_list.append(adj_coords)
-        if legal_placement(thegrid, adj_flipped_coords):
-            legal_placement_list.append(adj_flipped_coords)
-        coords = clockwise_rotate(coords)
-        flipped_coords = counter_clockwise_rotate(flipped_coords)
     return legal_placement_list
 
-def placements_from_head(thegrid, x, y):
-    coords = [(0,0), (1,0), (2,0), (2,1)]
-    flipped_coords = [(0,0), (1,0), (2,0), (2,-1)]
-    return legal_placements(thegrid, x, y, coords, flipped_coords)
-
-def placements_from_mid(thegrid, x, y):
-    coords = [(-1,0), (0,0), (1,0), (1,1)]
-    flipped_coords = [(-1,0), (0,0), (1,0), (1,-1)]
-    return legal_placements(thegrid, x, y, coords, flipped_coords)
-
-def placements_from_corner(thegrid,x, y):
-    coords = [(-2,0), (-1,0), (0,0), (0,1)]
-    flipped_coords = [(-2,0), (-1,0), (0,0), (0,-1)]
-    return legal_placements(thegrid, x, y, coords, flipped_coords)
-
-def placements_from_knob(thegrid, x, y):
-    coords = [(-2,-1), (-1,-1), (0,-1), (0,0)]
-    flipped_coords = [(-2,1), (-1,1), (0,1), (0,0)]
-    return legal_placements(thegrid, x, y, coords, flipped_coords)
+all_rotations = []
+def placement_gen(thegrid, i, j):
+    global all_rotations
+    if not all_rotations:
+        all_rotations.extend(rotations_from_head(thegrid))
+        all_rotations.extend(rotations_from_mid(thegrid))
+        all_rotations.extend(rotations_from_corner(thegrid))
+        all_rotations.extend(rotations_from_knob(thegrid))
+    all_placements = legal_placements(thegrid, i, j, all_rotations)
+    return all_placements
 
 def count_placements(thegrid):
     for i in xrange(thegrid.n):
@@ -131,14 +154,6 @@ def count_placements(thegrid):
     #print thegrid.show()
     #print
     return 1
-
-def placement_gen(thegrid, i, j):
-    all_placements = []
-    all_placements.extend(placements_from_head(thegrid, i, j))
-    all_placements.extend(placements_from_mid(thegrid, i, j))
-    all_placements.extend(placements_from_corner(thegrid, i, j))
-    all_placements.extend(placements_from_knob(thegrid, i, j))
-    return all_placements
 
 def make_changes(coords):
     return [(x, y, str(piece % 10)) for (x, y) in coords]

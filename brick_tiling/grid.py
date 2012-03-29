@@ -144,10 +144,6 @@ all_rotations.extend(rotations_from_corner())
 all_rotations.extend(rotations_from_knob())
 ALL_ROTATIONS = tuple(all_rotations)
 
-def placement_gen(thegrid, i, j):
-    all_placements = legal_placements(thegrid, i, j, ALL_ROTATIONS)
-    return all_placements
-
 def count_placements(thegrid):
     sq = thegrid.open_square()
     if sq:
@@ -168,7 +164,7 @@ def count_placements2(thegrid):
 def placements(thegrid, i, j):
     count = 0
     global piece
-    all_coords = placement_gen(thegrid, i, j)
+    all_coords = legal_placements(thegrid, i, j, ALL_ROTATIONS)
     for coords in all_coords:
         #print "Making placement from (%d, %d)" % (i, j)
         #print thegrid.show()

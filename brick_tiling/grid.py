@@ -91,28 +91,28 @@ def all_clockwise_rotations(coords):
         coords = clockwise_rotate(coords)
     return rotations
 
-def rotations_from_head(thegrid):
+def rotations_from_head():
     coords = [(0,0), (1,0), (2,0), (2,1)]
     flipped_coords = [(0,0), (1,0), (2,0), (2,-1)]
     rotations = all_clockwise_rotations(coords)
     rotations.extend(all_clockwise_rotations(flipped_coords))
     return rotations
 
-def rotations_from_mid(thegrid):
+def rotations_from_mid():
     coords = [(-1,0), (0,0), (1,0), (1,1)]
     flipped_coords = [(-1,0), (0,0), (1,0), (1,-1)]
     rotations = all_clockwise_rotations(coords)
     rotations.extend(all_clockwise_rotations(flipped_coords))
     return rotations
 
-def rotations_from_corner(thegrid):
+def rotations_from_corner():
     coords = [(-2,0), (-1,0), (0,0), (0,1)]
     flipped_coords = [(-2,0), (-1,0), (0,0), (0,-1)]
     rotations = all_clockwise_rotations(coords)
     rotations.extend(all_clockwise_rotations(flipped_coords))
     return rotations
 
-def rotations_from_knob(thegrid):
+def rotations_from_knob():
     coords = [(-2,-1), (-1,-1), (0,-1), (0,0)]
     flipped_coords = [(-2,1), (-1,1), (0,1), (0,0)]
     rotations = all_clockwise_rotations(coords)
@@ -136,15 +136,16 @@ def legal_placements(thegrid, x, y, rotations):
             legal_placement_list.append(adj_coords)
     return legal_placement_list
 
+# Build all_rotations const
 all_rotations = []
+all_rotations.extend(rotations_from_head())
+all_rotations.extend(rotations_from_mid())
+all_rotations.extend(rotations_from_corner())
+all_rotations.extend(rotations_from_knob())
+ALL_ROTATIONS = tuple(all_rotations)
+
 def placement_gen(thegrid, i, j):
-    global all_rotations
-    if not all_rotations:
-        all_rotations.extend(rotations_from_head(thegrid))
-        all_rotations.extend(rotations_from_mid(thegrid))
-        all_rotations.extend(rotations_from_corner(thegrid))
-        all_rotations.extend(rotations_from_knob(thegrid))
-    all_placements = legal_placements(thegrid, i, j, all_rotations)
+    all_placements = legal_placements(thegrid, i, j, ALL_ROTATIONS)
     return all_placements
 
 def count_placements(thegrid):

@@ -144,17 +144,16 @@ def adjust_coords(i, j, coords):
 def legal_placements(thegrid, x, y, rotations):
     for coords in rotations:
         adj_coords = []
-        continue_outer_loop = False
+        yield_coords = True
         for (i, j) in coords:
-            a = x+i; b = y+j
-            if thegrid.get(a, b) != OPEN:
-                continue_outer_loop = True
+            pair = (x+i, y+j)
+            if thegrid.get(*pair) != OPEN:
+                yield_coords = False
                 break
             else:
-                adj_coords.append((a, b))
-        if continue_outer_loop:
-            continue
-        yield adj_coords
+                adj_coords.append(pair)
+        if yield_coords:
+            yield adj_coords
 
 def nearby_squares(thegrid, coords):
     pass
@@ -220,7 +219,7 @@ def process_input():
         if thegrid.open_squares_count() % 4 == 0:
             sq = thegrid.open_square()
             print placements(thegrid, *sq) % 1000000007 if sq else 1
-            #print "Placement calls: %d" % placement_calls
+            print "Placement calls: %d" % placement_calls
         else:
             print "0"
 
